@@ -18,6 +18,11 @@
 	"engines": {
 		"node": ">=22.18"
 	},
+	"pi": {
+		"extensions": [
+			"./src/index.ts"
+		]
+	},
 	"files": [
 		"src",
 		"README.md",
