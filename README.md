@@ -19,19 +19,24 @@ list from the session itself.
 ## Install
 
 ```sh
-pi install git:github.com/quantmind-br/pi-todo-stop-reminder
+pi install npm:pi-todo-stop-reminder
 ```
 
-Or from a local clone:
+Or from git, or from a local clone:
 
 ```sh
+pi install git:github.com/quantmind-br/pi-todo-stop-reminder
 pi install ./pi-todo-stop-reminder
 ```
+
+Install it from one source only. Pi identifies npm packages by name and local packages by
+path, so an npm entry and a local entry for this package load two copies. Each copy keeps its
+own reminder limit and progress check, so the agent can get up to twice as many reminders per run.
 
 Or try it for one session:
 
 ```sh
-pi -e ./pi-todo-stop-reminder
+pi -e npm:pi-todo-stop-reminder
 ```
 
 ## When it reminds
