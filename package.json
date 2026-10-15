@@ -1,6 +1,6 @@
 {
 	"name": "pi-todo-stop-reminder",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Pi extension that reminds the agent about open @juicesharp/rpiv-todo tasks before it stops.",
 	"keywords": [
 		"pi-package",
