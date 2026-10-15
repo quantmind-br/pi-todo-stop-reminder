@@ -48,3 +48,17 @@ export function assistantMessage(text = "done") {
 		message: { role: "assistant", content: [{ type: "text", text }], stopReason: "stop" },
 	};
 }
+
+/** A toolResult message entry from any tool, e.g. one that ended the run with `terminate: true`. */
+export function toolResult(toolName: string, text = "ok") {
+	return {
+		id: nextEntryId(),
+		type: "message",
+		message: { role: "toolResult", toolName, content: [{ type: "text", text }], details: undefined },
+	};
+}
+
+/** A displayed `custom_message` entry, as extensions append through `sendMessage` or boundaries. */
+export function customMessage(customType = "other-extension", content = "note") {
+	return { id: nextEntryId(), type: "custom_message", customType, content, display: true };
+}

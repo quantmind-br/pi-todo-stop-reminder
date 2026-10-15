@@ -2,8 +2,16 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import todoStopReminder, { DEFAULT_MAX_REMINDERS, REMINDER_MESSAGE_TYPE, resolveConfig } from "../src/index.ts";
-import { formatReminder } from "../src/reminder.ts";
-import { assistantMessage, stateEntry, task, todoResult, userMessage } from "./fixtures.ts";
+import { endedOnToolResult, formatReminder } from "../src/reminder.ts";
+import {
+	assistantMessage,
+	customMessage,
+	stateEntry,
+	task,
+	todoResult,
+	toolResult,
+	userMessage,
+} from "./fixtures.ts";
 
 type Handler = (event: unknown, ctx: unknown) => unknown;
 
@@ -183,6 +191,22 @@ describe("guards", () => {
 		assert.equal(host.settle()?.entries[0]?.details.reminder, 1);
 	});
 
+	it("does not override a run that a tool ended on purpose", () => {
+		// e.g. pi-goal-x's update_goal pausing the goal returns `terminate: true`,
+		// so the run ends on its tool result without a final assistant message.
+		const host = setup();
+		runWithOpenTasks(host);
+		host.push(toolResult("update_goal", "Goal paused."));
+		assert.equal(host.settle(), undefined);
+	});
+
+	it("still reminds when the model answered after its last tool call", () => {
+		const host = setup();
+		runWithOpenTasks(host);
+		host.push(toolResult("bash"), assistantMessage("stopping"), customMessage());
+		assert.ok(host.settle());
+	});
+
 	it("keeps per-run state separate for each session", () => {
 		const host = setup();
 		runWithOpenTasks(host);
@@ -193,6 +217,20 @@ describe("guards", () => {
 		host.switchSession("session-1");
 		host.push(assistantMessage("no progress"));
 		assert.equal(host.settle(), undefined);
+	});
+});
+
+describe("endedOnToolResult", () => {
+	it("looks at the last message and skips non-message entries", () => {
+		assert.equal(endedOnToolResult([]), false);
+		assert.equal(endedOnToolResult([userMessage(), assistantMessage()]), false);
+		assert.equal(endedOnToolResult([assistantMessage(), toolResult("update_goal")]), true);
+		assert.equal(
+			endedOnToolResult([toolResult("set_goal_tasks"), stateEntry([task(1, "pending")]), customMessage()]),
+			true,
+		);
+		assert.equal(endedOnToolResult([toolResult("bash"), assistantMessage(), customMessage()]), false);
+		assert.equal(endedOnToolResult([null, undefined, "noise"]), false);
 	});
 });
 

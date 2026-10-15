@@ -30,6 +30,7 @@ export type SkipReason =
 	| "outcome"
 	| "continuing"
 	| "queued"
+	| "terminated"
 	| "no-todos"
 	| "no-open-tasks"
 	| "untouched"
@@ -45,11 +46,28 @@ function skip(reason: SkipReason): Decision {
 }
 
 /**
+ * True when the last message on the branch is a tool result, so the model never
+ * answered its last tool calls. A completed run only ends that way when a tool
+ * returned `terminate: true` or an extension ended the turn: the run was stopped on
+ * purpose (for example a goal that was paused, blocked, sent for completion review,
+ * or is waiting for confirmation), and a reminder must not override that stop.
+ * Non-message entries such as custom messages and state entries are skipped.
+ */
+export function endedOnToolResult(branch: readonly unknown[]): boolean {
+	for (let i = branch.length - 1; i >= 0; i--) {
+		const entry = branch[i] as { type?: unknown; message?: { role?: unknown } } | null | undefined;
+		if (entry?.type === "message") return entry.message?.role === "toolResult";
+	}
+	return false;
+}
+
+/**
  * Decide whether the agent should be reminded before it settles. It is reminded
  * only when all of these hold:
  * - the run ended normally (never after Esc or a provider error);
  * - nothing else will continue the run anyway (another handler's continuation or
  *   a queued message, which must take priority over a reminder);
+ * - the run was not stopped on purpose right after a tool call (see `endedOnToolResult`);
  * - the todo list has pending or in_progress tasks;
  * - fewer than `maxReminders` reminders were sent in this run;
  * - first reminder: the list changed during this run, so open tasks left over from
@@ -62,6 +80,7 @@ export function decide(run: RunState, input: SettleInput, maxReminders: number):
 	if (input.outcome !== "completed") return skip("outcome");
 	if (input.continueRequested) return skip("continuing");
 	if (input.pendingMessages > 0) return skip("queued");
+	if (endedOnToolResult(input.branch)) return skip("terminated");
 
 	const tasks = readTodoTasks(input.branch);
 	if (tasks === undefined) return skip("no-todos");

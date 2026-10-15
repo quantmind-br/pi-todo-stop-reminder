@@ -47,6 +47,7 @@ The agent is reminded only when **all** of these hold:
 | --- | --- |
 | The run ended normally | Never after Esc (abort) or a provider error. |
 | Nothing else continues the run | Another extension's continuation and queued user messages take priority. |
+| The run did not end on a tool result | A tool that returns `terminate: true` (for example a pi-goal-x tool that pauses or blocks a goal, or waits for confirmation) or an extension that ends the turn stopped the run on purpose. |
 | The list has `pending` or `in_progress` tasks | `completed` and `deleted` tasks are done. |
 | The current run changed the list (first reminder) | Open tasks left over from an earlier prompt do not hijack an unrelated question. |
 | The list changed since the last reminder (later reminders) | If the agent answers a reminder without touching the list, that is a deliberate stop and is not repeated. |
